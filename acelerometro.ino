@@ -1,26 +1,45 @@
 #include <I2Cdev.h>
 #include <MPU6050.h> 
+#include <Servo.h>
+#include <GFButton.h>
 
 MPU6050 MPU;
-int16_t ax,ay,az,gx,gy,gz;
-float angRoll, angPitch, ax2, ay2, az2;
+Servo servo1, servo2;
+GFButton botao1(11); // Alterar pino conforme necessidade
+int16_t axlsb,aylsb,azlsb,gxlsb,gylsb,gzlsb;
+float angRoll, angAntRoll = 0, angPitch, angAntPitch = 0, ax, ay, az;
+
+void setAngulos(){
+  angAntRoll = angRoll;
+  angAntPitch = angPitch;
+}
 
 void setup() {
   Serial.begin(9600);
   MPU.initialize();
+  servo1.attach(3);
+  servo2.attach(2);
+  servo1.write(0);
+  servo2.write(0);
+  botao1.setPressHandler(setAngulos);
 }
 
 void loop() {
-  MPU.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-  ax2 = (float)ax/16384-0.01;  // Converte medidas do acelerometro de LSB para valores reais [ O número subtraido é a calibração ]
-  ay2 = (float)ay/16384-0.01;
-  az2 = (float)az/16384-0.02;
+  MPU.getMotion6(&axlsb, &aylsb, &azlsb, &gxlsb, &gylsb, &gzlsb);
+  ax = (float)axlsb/16384-0.01;  // Converte medidas do acelerometro de LSB para valores reais [ O número subtraido é a calibração ]
+  ay = (float)aylsb/16384-0.01;
+  az = (float)azlsb/16384-0.02;
 
-  angRoll = atan(ay2/sqrt(ax2*ax2*az2*az2))*1/(3.142/180);    // Calcula os angulos em graus
-  angPitch = atan(ax2/sqrt(ay2*ay2*az2*az2))*1/(3.142/180);
+  angRoll = atan(ay/sqrt(ax*ax*az*az))*1/(3.142/180);    // Calcula os angulos em graus
+  angPitch = atan(ax/sqrt(ay*ay*az*az))*1/(3.142/180);
+
+  servo1.write(angRoll-angAntRoll);      // Pode também fazer mapeamento dos angulos para não ultrapassarem limites
+  servo2.write(angPitch-angAntPitch);
   
-  Serial.print("aX = "); Serial.print(ax2);
-  Serial.print(" | aY = "); Serial.print(ay2);
+  Serial.print("aX = "); Serial.print(ax);
+  Serial.print(" | aY = "); Serial.print(ay);
+  Serial.print(" | aX_map = "); Serial.print(ay);
+  Serial.print(" | aY_map = "); Serial.print(ay);
   Serial.print(" | angRoll = "); Serial.print(angRoll);
   Serial.print(" | angPitch = "); Serial.print(angPitch);
   Serial.println();
