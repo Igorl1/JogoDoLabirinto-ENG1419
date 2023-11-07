@@ -25,6 +25,7 @@ void setup() {
 }
 
 void loop() {
+  botao1.process();
   MPU.getMotion6(&axlsb, &aylsb, &azlsb, &gxlsb, &gylsb, &gzlsb);
   ax = (float)axlsb/16384-0.01;  // Converte medidas do acelerometro de LSB para valores reais [ O número subtraido é a calibração ]
   ay = (float)aylsb/16384-0.01;
