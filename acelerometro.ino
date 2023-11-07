@@ -38,8 +38,6 @@ void loop() {
   
   Serial.print("aX = "); Serial.print(ax);
   Serial.print(" | aY = "); Serial.print(ay);
-  Serial.print(" | aX_map = "); Serial.print(ay);
-  Serial.print(" | aY_map = "); Serial.print(ay);
   Serial.print(" | angRoll = "); Serial.print(angRoll);
   Serial.print(" | angPitch = "); Serial.print(angPitch);
   Serial.println();
