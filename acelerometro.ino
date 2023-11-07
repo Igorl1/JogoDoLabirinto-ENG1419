@@ -9,7 +9,7 @@ GFButton botao1(11); // Alterar pino conforme necessidade
 int16_t axlsb,aylsb,azlsb,gxlsb,gylsb,gzlsb;
 float angRoll, angAntRoll = 0, angPitch, angAntPitch = 0, ax, ay, az;
 
-void setAngulos(){
+void setAngulos(GFButton &botao1){
   angAntRoll = angRoll;
   angAntPitch = angPitch;
 }
