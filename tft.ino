@@ -10,7 +10,7 @@ Adafruit_ILI9341 tela = Adafruit_ILI9341(8, 10, 9);
 GFButton botao1(A1), botao2(A2), botao5(A5);
 TouchScreen touch(25, 26, 27, 9, 300);
 int time, timefinal, coordsx[7], coordsy[7], piaox = 2, piaoy = 1;
-const int t = 78, r = 15;
+const int t = 60, r = 15;
 bool cronometroAtivo, isOnMenu, isOnLab, ganhou = false;
 unsigned long instAnt = 0;
 
