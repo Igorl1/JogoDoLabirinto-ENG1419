@@ -10,8 +10,9 @@ Adafruit_ILI9341 tela = Adafruit_ILI9341(8, 10, 9);
 GFButton botao1(A1), botao2(A2), botao5(A5);
 TouchScreen touch(25, 26, 27, 9, 300);
 int time, timefinal, coordsx[7], coordsy[7], piaox = 2, piaoy = 1;
-const int t = 60, r = 15;
+const int t = 78, r = 15;
 bool cronometroAtivo, isOnMenu, isOnLab, ganhou = false;
+unsigned long instAnt = 0;
 
 void ResetCronometro(){
   cronometroAtivo = false;
@@ -24,7 +25,7 @@ void setup(void) {
   Menu();
   //botao_start.setPressHandler(Labirinto);
   //botao_niv.setPressHandler(Select);
-  //botao_niv.setPressHandler(Menu);
+  //botao_menu.setPressHandler(Menu);
   botao1.setPressHandler(Labirinto);
   botao2.setPressHandler(Select);
   botao5.setPressHandler(Menu);
@@ -37,8 +38,11 @@ void loop() {
   botao1.process();
   botao2.process();
   botao5.process();
-  Cronometro();
-  delay(1000);
+  unsigned long instAtual = millis();
+  if(instAtual > instAnt + 1000){
+    Cronometro();
+    instAnt = instAtual;
+  }
 }
 
 void Cronometro(){
@@ -86,7 +90,7 @@ void Menu(){
 
 void End(){
   char str[1];
-  int tempoDecorrido = t - timefinal;
+  int tempoDecorrido = t - timefinal, minutos = tempoDecorrido / 60, segundos = tempoDecorrido % 60;
   ResetCronometro();
   isOnMenu = false;
   tela.fillScreen(ILI9341_BLACK);
@@ -98,11 +102,7 @@ void End(){
   tela.setTextSize(2);
   tela.setCursor(20, 80);
   tela.print("Tempo: ");
-  if(tempoDecorrido < 10){
-    sprintf(str, "0:0%d", tempoDecorrido);
-  }else{
-    sprintf(str, "0:%d", tempoDecorrido);
-  }
+  sprintf(str, "%d:%.2d", minutos,segundos);
   tela.print(str);
 }
 
