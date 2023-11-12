@@ -1,24 +1,30 @@
 #include <Adafruit_ILI9341.h>
-//#include <JKSButton.h>
 #include <TouchScreen.h>
 #include <GFButton.h>
+//#include <JKSButton.h>
+//#include <MCUFRIEND.h>
+//#include <Adafruit_GFX.h>
 
+//JKSButton botao_start, botao_niv, botao_menu;
 Adafruit_ILI9341 tela = Adafruit_ILI9341(8, 10, 9);
-//JKSButton botao_start, botao_niv;
-GFButton botao1(A1),botao2(A2),botao5(A5);
+GFButton botao1(A1), botao2(A2), botao5(A5);
 TouchScreen touch(25, 26, 27, 9, 300);
-int time;
-bool CronometroAtivo, IsOnMenu, Ganhou = false;
+int time, timefinal, coordsx[7], coordsy[7], piaox = 2, piaoy = 1;
+const int t = 60, r = 15;
+bool cronometroAtivo, isOnMenu, isOnLab, ganhou = false;
 
 void ResetCronometro(){
-  CronometroAtivo = false;
-  time = 60;
+  cronometroAtivo = false;
+  time = t;
 }
 
 void setup(void) {
   Serial.begin(9600);
   tela.begin();
   Menu();
+  //botao_start.setPressHandler(Labirinto);
+  //botao_niv.setPressHandler(Select);
+  //botao_niv.setPressHandler(Menu);
   botao1.setPressHandler(Labirinto);
   botao2.setPressHandler(Select);
   botao5.setPressHandler(Menu);
@@ -27,6 +33,7 @@ void setup(void) {
 void loop() {
   //botao_start.process();
   //botao_niv.process();
+  //botao_menu.process();
   botao1.process();
   botao2.process();
   botao5.process();
@@ -35,7 +42,11 @@ void loop() {
 }
 
 void Cronometro(){
-  if(CronometroAtivo){
+  if(cronometroAtivo && isOnMenu == false){
+    tela.setCursor(15, 250);
+    tela.setTextColor(ILI9341_WHITE);
+    tela.setTextSize(2);
+    tela.print("Tempo: ");
     tela.fillRect(86, 245, 30, 100, ILI9341_BLUE);
     tela.setCursor(90, 250);
     tela.setTextColor(ILI9341_WHITE);
@@ -45,22 +56,20 @@ void Cronometro(){
       End();
     }
     time = time - 1;
+    timefinal = time;
   }
 }
 
 void Menu(){
   ResetCronometro();
-  IsOnMenu = true;
+  isOnMenu = true;
   tela.fillScreen(ILI9341_BLACK);
-  //botao_start.init(&tela, &touch, 120, 120, 170, 25, ILI9341_WHITE, ILI9341_BLUE, ILI9341_WHITE, "Jogar", 1);
-  //botao_niv.init(&tela, &touch, 120, 180, 170, 25, ILI9341_WHITE, ILI9341_BLUE, ILI9341_WHITE, "Nivel", 1);
-  //botao_start.setPressHandler(Labirinto);
-  //botao_niv.setPressHandler(Select);
+  
+  //botao_start.init(&tela, &touch, 120, 120, 170, 25, ILI9341_WHITE, ILI9341_BLUE, ILI9341_BLUE, "Jogar", 1);
+  //botao_niv.init(&tela, &touch, 120, 180, 170, 25, ILI9341_WHITE, ILI9341_BLUE, ILI9341_BLUE, "Nivel", 1);
 
   tela.fillRect(100, 120, 170, 25, ILI9341_BLUE);
-
   tela.fillRect(120, 160, 170, 25, ILI9341_BLUE);
-
   tela.fillRect(140, 200, 170, 25, ILI9341_BLUE);
 
   tela.fillRect(18,38,204,32, ILI9341_WHITE);
@@ -76,42 +85,58 @@ void Menu(){
 }
 
 void End(){
+  char str[1];
+  int tempoDecorrido = t - timefinal;
   ResetCronometro();
-  IsOnMenu = false;
+  isOnMenu = false;
   tela.fillScreen(ILI9341_BLACK);
+  //botao_menu.init(&tela, &touch, 120, 180, 170, 25, ILI9341_WHITE, ILI9341_BLUE, ILI9341_BLUE, "Menu", 1);
+  tela.setTextColor(ILI9341_WHITE);
+  tela.setTextSize(3);
   tela.setCursor(20, 40);
-  tela.setTextColor(ILI9341_WHITE);
+  tela.println(ganhou ? "Ganhou!" : "Perdeu");
   tela.setTextSize(2);
-  tela.println("Fim de Jogo.");
-  tela.setCursor(20, 60);
-  tela.setTextColor(ILI9341_WHITE);
-  tela.setTextSize(2);
-  if(Ganhou){
-    tela.println("Ganhou.");
+  tela.setCursor(20, 80);
+  tela.print("Tempo: ");
+  if(tempoDecorrido < 10){
+    sprintf(str, "0:0%d", tempoDecorrido);
   }else{
-    tela.println("Perdeu.");
+    sprintf(str, "0:%d", tempoDecorrido);
   }
+  tela.print(str);
 }
 
 void Select(GFButton &botao){ 
-  if(IsOnMenu){
+  if(isOnMenu){
     tela.fillScreen(ILI9341_BLACK);
     tela.setCursor(10, 40);
     tela.setTextColor(ILI9341_WHITE);
     tela.setTextSize(2);
     tela.println("Selecione o nivel:");
   }
+  isOnMenu = false;
 }
 
-void DrawPiao(){
-  tela.fillCircle(210, 210, 15, ILI9341_BLUE);
-  tela.drawCircle(210, 210, 15, ILI9341_BLACK);
+void DrawPiao(int piaox, int piaoy){
+  int coordx = 0, coordy = 0, x_ini = 7, y_ini = 7;
+  for (int i = 0; i < 7; ++i) {
+    coordx += 30;
+    coordy += 30;
+    coordsx[x_ini] = coordx;
+    coordsy[y_ini] = coordy;
+    x_ini = x_ini - 1;
+    y_ini = y_ini - 1; 
+  }
+  tela.fillCircle(coordsx[piaox], coordsy[piaoy], r, ILI9341_BLUE);
+  tela.drawCircle(coordsx[piaox], coordsy[piaoy], r, ILI9341_BLACK);
 }
 
 void Labirinto(GFButton &botao){ 
-  CronometroAtivo = true;
-  IsOnMenu = false;
+  if(isOnMenu == true){
+  cronometroAtivo = true;
+  isOnMenu = false;
   tela.fillScreen(ILI9341_BLACK);
+  //botao_menu.init(&tela, &touch, 120, 180, 170, 25, ILI9341_WHITE, ILI9341_BLUE, ILI9341_BLUE, "Menu", 1);
   tela.fillRect(15, 15, 210, 210, ILI9341_WHITE);
 
   tela.drawRect(15, 15, 30, 30, ILI9341_BLUE);
@@ -170,10 +195,6 @@ void Labirinto(GFButton &botao){
   tela.drawRect(165, 195, 30, 30, ILI9341_BLUE);
   tela.drawRect(195, 195, 30, 30, ILI9341_BLUE);
 
-  DrawPiao();
-
-  tela.setCursor(15, 250);
-  tela.setTextColor(ILI9341_WHITE);
-  tela.setTextSize(2);
-  tela.print("Tempo: ");
+  DrawPiao(piaox,piaoy);
+  }
 }
