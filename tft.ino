@@ -5,11 +5,11 @@
 //#include <MCUFRIEND.h>
 //#include <Adafruit_GFX.h>
 
-//JKSButton botao_start, botao_niv, botao_menu;
+//JKSButton botao_start, botao_niv, botao_menu, botao_n1, botao_n2, botao_n3;
 Adafruit_ILI9341 tela = Adafruit_ILI9341(8, 10, 9);
 GFButton botao1(A1), botao2(A2), botao5(A5);
 TouchScreen touch(25, 26, 27, 9, 300);
-int time, timefinal, coordsx[7], coordsy[7], piaox = 2, piaoy = 1;
+int time, timefinal, mode, coordsx[7], coordsy[7], piaox = 2, piaoy = 1;
 const int t = 60, r = 15;
 bool cronometroAtivo, isOnMenu, isOnLab, ganhou = false;
 unsigned long instAnt = 0;
@@ -43,6 +43,19 @@ void loop() {
     Cronometro();
     instAnt = instAtual;
   }
+  /*
+  if(mode == 1){ //Menu
+    botao_start.process();
+    botao_niv.process();
+  } else if(mode == 2){ //Labirinto, End
+    botao_menu.process();
+  } else if(mode == 3){ //Select
+    botao_menu.process();
+    botao_n1.process();
+    botao_n2.process();
+    botao_n3.process();
+  }
+  */
 }
 
 void Cronometro(){
@@ -66,24 +79,20 @@ void Cronometro(){
 
 void Menu(){
   ResetCronometro();
+  mode = 1;
   isOnMenu = true;
   tela.fillScreen(ILI9341_BLACK);
   
   //botao_start.init(&tela, &touch, 120, 120, 170, 25, ILI9341_WHITE, ILI9341_BLUE, ILI9341_BLUE, "Jogar", 1);
   //botao_niv.init(&tela, &touch, 120, 180, 170, 25, ILI9341_WHITE, ILI9341_BLUE, ILI9341_BLUE, "Nivel", 1);
 
-  tela.fillRect(100, 120, 170, 25, ILI9341_BLUE);
-  tela.fillRect(120, 160, 170, 25, ILI9341_BLUE);
-  tela.fillRect(140, 200, 170, 25, ILI9341_BLUE);
-
   tela.fillRect(18,38,204,32, ILI9341_WHITE);
-  
   tela.setCursor(19, 40);
-  tela.setTextColor(ILI9341_BLACK);
+  tela.setTextColor(ILI9341_BLUE);
   tela.setTextSize(2);
   tela.println("Jogo do Labirinto");
   tela.setCursor(93, 60);
-  tela.setTextColor(ILI9341_BLACK);
+  tela.setTextColor(ILI9341_BLUE);
   tela.setTextSize(1);
   tela.println("Turma 3VA");
 }
@@ -92,13 +101,17 @@ void End(){
   char str[1];
   int tempoDecorrido = t - timefinal, minutos = tempoDecorrido / 60, segundos = tempoDecorrido % 60;
   ResetCronometro();
+  mode = 2;
   isOnMenu = false;
   tela.fillScreen(ILI9341_BLACK);
+
   //botao_menu.init(&tela, &touch, 120, 180, 170, 25, ILI9341_WHITE, ILI9341_BLUE, ILI9341_BLUE, "Menu", 1);
+
+  tela.fillRect(0, 75, 165, 25, ILI9341_BLUE);
   tela.setTextColor(ILI9341_WHITE);
   tela.setTextSize(3);
   tela.setCursor(20, 40);
-  tela.println(ganhou ? "Ganhou!" : "Perdeu");
+  tela.println(ganhou ? "Vitoria" : "Derrota");
   tela.setTextSize(2);
   tela.setCursor(20, 80);
   tela.print("Tempo: ");
@@ -109,10 +122,18 @@ void End(){
 void Select(GFButton &botao){ 
   if(isOnMenu){
     tela.fillScreen(ILI9341_BLACK);
-    tela.setCursor(10, 40);
-    tela.setTextColor(ILI9341_WHITE);
+    mode = 3;
+
+    //botao_menu.init(&tela, &touch, 120, 180, 170, 25, ILI9341_WHITE, ILI9341_BLUE, ILI9341_BLUE, "Menu", 1);
+    //botao_n1.init(&tela, &touch, 120, 180, 170, 25, ILI9341_WHITE, ILI9341_BLUE, ILI9341_BLUE, "Menu", 1);
+    //botao_n2.init(&tela, &touch, 120, 180, 170, 25, ILI9341_WHITE, ILI9341_BLUE, ILI9341_BLUE, "Menu", 1);
+    //botao_n3.init(&tela, &touch, 120, 180, 170, 25, ILI9341_WHITE, ILI9341_BLUE, ILI9341_BLUE, "Menu", 1);
+
+    tela.fillRect(18,38,204,20, ILI9341_WHITE);
+    tela.setCursor(19, 40);
+    tela.setTextColor(ILI9341_BLUE);
     tela.setTextSize(2);
-    tela.println("Selecione o nivel:");
+    tela.println("Selecione o Nivel");
   }
   isOnMenu = false;
 }
@@ -134,9 +155,12 @@ void DrawPiao(int piaox, int piaoy){
 void Labirinto(GFButton &botao){ 
   if(isOnMenu == true){
   cronometroAtivo = true;
+  mode = 2;
   isOnMenu = false;
   tela.fillScreen(ILI9341_BLACK);
+
   //botao_menu.init(&tela, &touch, 120, 180, 170, 25, ILI9341_WHITE, ILI9341_BLUE, ILI9341_BLUE, "Menu", 1);
+
   tela.fillRect(15, 15, 210, 210, ILI9341_WHITE);
 
   tela.drawRect(15, 15, 30, 30, ILI9341_BLUE);
