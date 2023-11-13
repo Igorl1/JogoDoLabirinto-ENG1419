@@ -7,7 +7,7 @@
 JKSButton botao_start, botao_niv, botao_menu, botao_n1, botao_n2, botao_n3;
 MCUFRIEND_kbv tela;
 TouchScreen touch(6, A1, A2, 7, 300);
-int timemax = 60, cronometro, timefinal, modo, coordsx[7], coordsy[7], piaoX = 1, piaoY = 1;
+int timemax = 60, cronometro, timefinal, modo, coordsx[7], coordsy[7], piaoX = 1, piaoY = 1, piaoXAnt = 1, piaoYAnt = 1, data = 0;
 const int piaoR = 15;
 bool cronometroAtivo, ganhou = false;
 unsigned long instAnt = 0;
@@ -31,19 +31,53 @@ void loop() {
   } else if(modo == 2){ //Labirinto, End
     botao_menu.process();
   } else{ //Select
-    botao_menu.process();
     botao_n1.process();
     botao_n2.process();
     botao_n3.process();
   }
+
+  if (Serial.available() > 0) {
+    piaoX = Serial.parseInt();
+    Serial.read();  
+    piaoY = Serial.parseInt();
+  }
+
   unsigned long instAtual = millis();
   if(instAtual > instAnt + 1000){
     UpdateCrono();
-    instAnt = instAtual;
-
-  }
+    instAnt = instAtual;/*
+    piaoXAnt = piaoX;
+    piaoYAnt = piaoY;
+    piaoX = piaoX + 1;
+    if (piaoY == 7){
+      piaoY = 1;
+    }
+    if (piaoX == 7){
+      piaoX = 1;
+    }
+    piaoY = piaoY + 1;
+    piaoY = piaoY + 1;*/
+  }/*
+  if((piaoX!=piaoXAnt && modo == 2 && cronometroAtivo)||(piaoY!=piaoYAnt && modo == 2 && cronometroAtivo)){
+    DrawPiao(piaoX,piaoY);
+    DelPiao(piaoXAnt,piaoYAnt);
+  }*/
 }
-
+/*
+void DelPiao(int piaoX, int piaoY){
+  int coordx = 0, coordy = 0, x_ini = 7, y_ini = 7;
+  for (int i = 0; i < 7; ++i) {
+    coordx += 30;
+    coordy += 30;
+    coordsx[x_ini] = coordx;
+    coordsy[y_ini] = coordy;
+    x_ini = x_ini - 1;
+    y_ini = y_ini - 1; 
+  }
+  tela.fillRect(coordsx[piaoX]-15, coordsy[piaoY]-15, 30,30, TFT_WHITE);
+  tela.drawRect(coordsx[piaoX]-15, coordsy[piaoY]-15, 30,30, TFT_BLUE);
+}
+*/
 void UpdateCrono(){
   if(cronometroAtivo && modo == 2){
     tela.setCursor(15, 250);
@@ -92,7 +126,6 @@ void Select(){
     botao_n1.init(&tela, &touch, 120, 120, 170, 25, TFT_BLUE, TFT_BLUE, TFT_BLACK, "Nivel 1", 1);
     botao_n2.init(&tela, &touch, 120, 150, 170, 25, TFT_BLUE, TFT_BLUE, TFT_BLACK, "Nivel 2", 1);
     botao_n3.init(&tela, &touch, 120, 180, 170, 25, TFT_BLUE, TFT_BLUE, TFT_BLACK, "Nivel 3", 1);
-    botao_menu.init(&tela, &touch, 120, 210, 170, 25, TFT_BLUE, TFT_BLUE, TFT_BLACK, "Menu", 1);
     tela.fillRect(18,38,204,20, TFT_WHITE);
     tela.setCursor(19, 40);
     tela.setTextColor(TFT_BLUE);
@@ -123,14 +156,17 @@ void End(){
 
 void N1(){
   timemax = 90;
+  Menu();
 }
 
 void N2(){
   timemax = 60;
+  Menu();
 }
 
 void N3(){
   timemax = 30;
+  Menu();
 }
 
 void DrawPiao(int piaoX, int piaoY){
