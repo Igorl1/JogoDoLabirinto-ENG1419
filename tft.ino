@@ -154,7 +154,7 @@ void DrawPiao(int piaoX, int piaoY){
   tela.drawCircle(coordsx[piaoX], coordsy[piaoY], piaoR, ILI9341_BLACK);
 }
 
-void Labirinto(GFButton &botao){ 
+void Labirinto(){ 
   if(modo == 1){
   modo = 2;
   cronometroAtivo = true;
