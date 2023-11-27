@@ -1,4 +1,3 @@
-
 #include <TouchScreen.h>
 #include <JKSButton.h>
 #include <MCUFRIEND_kbv.h>
@@ -7,10 +6,10 @@
 JKSButton botao_start, botao_niv, botao_menu, botao_n1, botao_n2, botao_n3;
 MCUFRIEND_kbv tela;
 TouchScreen touch(6, A1, A2, 7, 300);
-int timemax = 60, cronometro, timefinal, modo, coordsx[7], coordsy[7], piaoX = 1, piaoY = 1, piaoXAnt = 1, piaoYAnt = 1, data = 0;
+int timemax = 60, cronometro, timefinal, modo, coordsx[7], coordsy[7], piaoX = 1, piaoY = 1, piaoXAnt = 1, piaoYAnt = 1;
 const int piaoR = 15;
 bool cronometroAtivo, ganhou = false;
-unsigned long instAnt = 0;
+unsigned long instAnt = 0, instAnt2 = 0;
 
 void setup(void) {
   Serial.begin(9600);
@@ -35,35 +34,48 @@ void loop() {
     botao_n2.process();
     botao_n3.process();
   }
-
+  
   if (Serial.available() > 0) {
+    //String input = Serial.readStringUntil("");
     piaoX = Serial.parseInt();
     Serial.read();  
     piaoY = Serial.parseInt();
   }
-
+  
   unsigned long instAtual = millis();
   if(instAtual > instAnt + 1000){
-    UpdateCrono();
-    instAnt = instAtual;/*
+    UpdateCronometro();
+    instAnt = instAtual;
+  }
+  
+  unsigned long instAtual2 = millis();
+  if(instAtual2 > instAnt2 + 500){
+    if (cronometroAtivo && modo == 2){
     piaoXAnt = piaoX;
     piaoYAnt = piaoY;
     piaoX = piaoX + 1;
-    if (piaoY == 7){
-      piaoY = 1;
-    }
-    if (piaoX == 7){
-      piaoX = 1;
-    }
     piaoY = piaoY + 1;
-    piaoY = piaoY + 1;*/
-  }/*
+    } else{
+    piaoX = 1;
+    piaoY = 1;
+    piaoXAnt = 1;
+    piaoYAnt = 1;
+    }
+    instAnt2 = instAtual2;
+  }
+
+  if(piaoY == 8){
+    piaoY = 1;
+  }
+  if(piaoX == 8){
+    piaoX = 1;
+  } 
   if((piaoX!=piaoXAnt && modo == 2 && cronometroAtivo)||(piaoY!=piaoYAnt && modo == 2 && cronometroAtivo)){
     DrawPiao(piaoX,piaoY);
     DelPiao(piaoXAnt,piaoYAnt);
-  }*/
+  }
 }
-/*
+
 void DelPiao(int piaoX, int piaoY){
   int coordx = 0, coordy = 0, x_ini = 7, y_ini = 7;
   for (int i = 0; i < 7; ++i) {
@@ -77,8 +89,8 @@ void DelPiao(int piaoX, int piaoY){
   tela.fillRect(coordsx[piaoX]-15, coordsy[piaoY]-15, 30,30, TFT_WHITE);
   tela.drawRect(coordsx[piaoX]-15, coordsy[piaoY]-15, 30,30, TFT_BLUE);
 }
-*/
-void UpdateCrono(){
+
+void UpdateCronometro(){
   if(cronometroAtivo && modo == 2){
     tela.setCursor(15, 250);
     tela.setTextColor(TFT_WHITE);
@@ -106,15 +118,15 @@ void Menu(){
   ResetCronometro();
   modo = 1;
   tela.fillScreen(TFT_BLACK);
-  botao_start.init(&tela, &touch, 120, 120, 170, 25, TFT_BLUE, TFT_BLUE, TFT_BLACK, "Jogar", 1);
-  botao_niv.init(&tela, &touch, 120, 180, 170, 25, TFT_BLUE, TFT_BLUE, TFT_BLACK, "Nivel", 1);
-  tela.fillRect(18,38,204,32, TFT_WHITE);
-  tela.setCursor(19, 40);
-  tela.setTextColor(TFT_BLUE);
+  botao_start.init(&tela, &touch, 120, 140, 170, 50, TFT_BLUE, TFT_BLUE, TFT_BLACK, "Jogar", 2);
+  botao_niv.init(&tela, &touch, 120, 220, 170, 50, TFT_BLUE, TFT_BLUE, TFT_BLACK, "Config", 2);
+  tela.fillRect(18,38,204,32, TFT_BLUE);
+  tela.setCursor(20, 40);
+  tela.setTextColor(TFT_WHITE);
   tela.setTextSize(2);
   tela.println("Jogo do Labirinto");
   tela.setCursor(93, 60);
-  tela.setTextColor(TFT_BLUE);
+  tela.setTextColor(TFT_WHITE);
   tela.setTextSize(1);
   tela.println("Turma 3VA");
 }
@@ -123,25 +135,24 @@ void Select(){
   if(modo == 1){
     modo = 3;
     tela.fillScreen(TFT_BLACK);
-    botao_n1.init(&tela, &touch, 120, 120, 170, 25, TFT_BLUE, TFT_BLUE, TFT_BLACK, "Nivel 1", 1);
-    botao_n2.init(&tela, &touch, 120, 150, 170, 25, TFT_BLUE, TFT_BLUE, TFT_BLACK, "Nivel 2", 1);
-    botao_n3.init(&tela, &touch, 120, 180, 170, 25, TFT_BLUE, TFT_BLUE, TFT_BLACK, "Nivel 3", 1);
-    tela.fillRect(18,38,204,20, TFT_WHITE);
+    botao_n1.init(&tela, &touch, 120, 110, 170, 50, TFT_BLUE, TFT_BLUE, TFT_BLACK, "90 Seg", 2);
+    botao_n2.init(&tela, &touch, 120, 190, 170, 50, TFT_BLUE, TFT_BLUE, TFT_BLACK, "60 Seg", 2);
+    botao_n3.init(&tela, &touch, 120, 270, 170, 50, TFT_BLUE, TFT_BLUE, TFT_BLACK, "30 Seg", 2);
+    tela.fillRect(0,38,185,20, TFT_BLUE);
     tela.setCursor(19, 40);
-    tela.setTextColor(TFT_BLUE);
+    tela.setTextColor(TFT_WHITE);
     tela.setTextSize(2);
-    tela.println("Selecione o Nivel");
+    tela.println("Tempo de Jogo");
   }
 }
 
 void End(){
   char str[1];
   int timedecorrido = timemax - timefinal, minutos = timedecorrido / 60, segundos = timedecorrido % 60;
-
   ResetCronometro();
   modo = 2;
   tela.fillScreen(TFT_BLACK);
-  botao_menu.init(&tela, &touch, 120, 180, 170, 25, TFT_BLUE, TFT_BLUE, TFT_BLACK, "Menu", 1);
+  botao_menu.init(&tela, &touch, 120, 180, 170, 50, TFT_BLUE, TFT_BLUE, TFT_BLACK, "Menu", 2);
   tela.fillRect(0, 75, 165, 25, TFT_BLUE);
   tela.setTextColor(TFT_WHITE);
   tela.setTextSize(3);
@@ -189,7 +200,7 @@ void Labirinto(){
   cronometroAtivo = true;
   tela.fillScreen(TFT_BLACK);
 
-  botao_menu.init(&tela, &touch, 175, 280, 80, 25, TFT_BLUE, TFT_BLUE, TFT_BLACK, "Menu", 1);
+  botao_menu.init(&tela, &touch, 175, 280, 80, 50, TFT_BLUE, TFT_BLUE, TFT_BLACK, "Menu", 2);
 
   tela.fillRect(15, 15, 210, 210, TFT_WHITE);
 
