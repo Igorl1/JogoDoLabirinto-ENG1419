@@ -1,20 +1,26 @@
 #include <TouchScreen.h>
 #include <JKSButton.h>
 #include <MCUFRIEND_kbv.h>
-#include <Adafruit_GFX.h>
+
+typedef struct {
+  int x[8];
+  int y[8];
+} Coord;
 
 JKSButton botao_start, botao_niv, botao_menu, botao_n1, botao_n2, botao_n3;
 MCUFRIEND_kbv tela;
 TouchScreen touch(6, A1, A2, 7, 300);
-int timemax = 60, cronometro, timefinal, modo, coordsx[7], coordsy[7], piaoX = 1, piaoY = 1, piaoXAnt = 1, piaoYAnt = 1, input1, input2;
+int timemax = 60, cronometro, timefinal, modo, piaoX = 1, piaoY = 1, piaoXAnt = 1, piaoYAnt = 1;
 const int piaoR = 15;
 bool ganhou = false;
 unsigned long instAnt = 0, instAnt2 = 0;
+Coord coords;
 
 void setup(void) {
   Serial.begin(9600);
   tela.begin(tela.readID());
   Menu();
+  Mapeamento();
   botao_start.setPressHandler(Labirinto);
   botao_niv.setPressHandler(Select);
   botao_menu.setPressHandler(Menu);
@@ -33,17 +39,14 @@ void loop() {
     botao_n1.process();
     botao_n2.process();
     botao_n3.process();
-  } else if (modo == 4){  // End
+  } else if (modo == 4) {  // End
     botao_start.process();
     botao_menu.process();
   }
 
   if (Serial.available() >= 4) {
-    input1 = Serial.parseInt();
-    Serial.read();
-    input2 = Serial.parseInt();
-    piaoX = input1;
-    piaoY = input2;
+    piaoX = Serial.parseInt();
+    piaoY = Serial.parseInt();
   }
 
   unsigned long instAtual = millis();
@@ -65,7 +68,7 @@ void loop() {
     }
     instAnt2 = instAtual2;
   }
-  
+
   if (piaoY > 7) {
     piaoY = 7;
   }
@@ -166,35 +169,46 @@ void N3() {
   Menu();
 }
 
-void DrawPiao(int piaoX, int piaoY) {
+void Mapeamento() {
   int coordx = 0, coordy = 0, x_ini = 7, y_ini = 7;
   for (int i = 0; i < 7; ++i) {
     coordx += 30;
     coordy += 30;
-    coordsx[x_ini] = coordx;
-    coordsy[y_ini] = coordy;
+    coords.x[x_ini] = coordx;
+    coords.y[y_ini] = coordy;
     x_ini = x_ini - 1;
     y_ini = y_ini - 1;
   }
-  tela.fillCircle(coordsx[piaoX], coordsy[piaoY], piaoR, TFT_BLUE);
-  tela.drawCircle(coordsx[piaoX], coordsy[piaoY], piaoR, TFT_BLACK);
+}
+
+void DrawTile(String str, int x, int y) {
+  if (str == "parede") {
+    tela.fillRect(coords.x[x] - 15, coords.y[y] - 15, 30, 30, TFT_BLACK);
+    tela.drawRect(coords.x[x] - 15, coords.y[y] - 15, 30, 30, TFT_BLUE);
+  } else if (str == "checkpoint") {
+    tela.fillRect(coords.x[x] - 15, coords.y[y] - 15, 30, 30, TFT_RED);
+    tela.drawRect(coords.x[x] - 15, coords.y[y] - 15, 30, 30, TFT_BLUE);
+  } else if (str == "final") {
+    tela.fillRect(coords.x[x] - 15, coords.y[y] - 15, 30, 30, TFT_YELLOW);
+    tela.drawRect(coords.x[x] - 15, coords.y[y] - 15, 30, 30, TFT_BLUE);
+  } else if (str == "inicial") {
+    tela.fillRect(coords.x[x] - 15, coords.y[y] - 15, 30, 30, TFT_GREEN);
+    tela.drawRect(coords.x[x] - 15, coords.y[y] - 15, 30, 30, TFT_BLUE);
+  }
+}
+
+void DrawPiao(int piaoX, int piaoY) {
+  tela.fillCircle(coords.x[piaoX], coords.y[piaoY], piaoR, TFT_BLUE);
+  tela.drawCircle(coords.x[piaoX], coords.y[piaoY], piaoR, TFT_BLACK);
 }
 
 void DelPiao(int piaoX, int piaoY) {
-  int coordx = 0, coordy = 0, x_ini = 7, y_ini = 7;
-  for (int i = 0; i < 7; ++i) {
-    coordx += 30;
-    coordy += 30;
-    coordsx[x_ini] = coordx;
-    coordsy[y_ini] = coordy;
-    x_ini = x_ini - 1;
-    y_ini = y_ini - 1;
-  }
-  tela.fillRect(coordsx[piaoX] - 15, coordsy[piaoY] - 15, 30, 30, TFT_WHITE);
-  tela.drawRect(coordsx[piaoX] - 15, coordsy[piaoY] - 15, 30, 30, TFT_BLUE);
+  tela.fillRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_WHITE);
+  tela.drawRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_BLUE);
 }
 
 void Labirinto() {
+  int aumento = 0;
   modo = 2;
   tela.fillScreen(TFT_BLACK);
 
@@ -202,61 +216,18 @@ void Labirinto() {
 
   tela.fillRect(15, 15, 210, 210, TFT_WHITE);
 
-  tela.drawRect(15, 15, 30, 30, TFT_BLUE);
-  tela.drawRect(45, 15, 30, 30, TFT_BLUE);
-  tela.drawRect(75, 15, 30, 30, TFT_BLUE);
-  tela.drawRect(105, 15, 30, 30, TFT_BLUE);
-  tela.drawRect(135, 15, 30, 30, TFT_BLUE);
-  tela.drawRect(165, 15, 30, 30, TFT_BLUE);
-  tela.drawRect(195, 15, 30, 30, TFT_BLUE);
+  for (int i = 0; i < 7; i++) {
+    tela.drawRect(15, 15 + aumento, 30, 30, TFT_BLUE);
+    tela.drawRect(45, 15 + aumento, 30, 30, TFT_BLUE);
+    tela.drawRect(75, 15 + aumento, 30, 30, TFT_BLUE);
+    tela.drawRect(105, 15 + aumento, 30, 30, TFT_BLUE);
+    tela.drawRect(135, 15 + aumento, 30, 30, TFT_BLUE);
+    tela.drawRect(165, 15 + aumento, 30, 30, TFT_BLUE);
+    tela.drawRect(195, 15 + aumento, 30, 30, TFT_BLUE);
+    aumento = aumento + 30;
+  }
 
-  tela.drawRect(15, 45, 30, 30, TFT_BLUE);
-  tela.drawRect(45, 45, 30, 30, TFT_BLUE);
-  tela.drawRect(75, 45, 30, 30, TFT_BLUE);
-  tela.drawRect(105, 45, 30, 30, TFT_BLUE);
-  tela.drawRect(135, 45, 30, 30, TFT_BLUE);
-  tela.drawRect(165, 45, 30, 30, TFT_BLUE);
-  tela.drawRect(195, 45, 30, 30, TFT_BLUE);
-
-  tela.drawRect(15, 75, 30, 30, TFT_BLUE);
-  tela.drawRect(45, 75, 30, 30, TFT_BLUE);
-  tela.drawRect(75, 75, 30, 30, TFT_BLUE);
-  tela.drawRect(105, 75, 30, 30, TFT_BLUE);
-  tela.drawRect(135, 75, 30, 30, TFT_BLUE);
-  tela.drawRect(165, 75, 30, 30, TFT_BLUE);
-  tela.drawRect(195, 75, 30, 30, TFT_BLUE);
-
-  tela.drawRect(15, 105, 30, 30, TFT_BLUE);
-  tela.drawRect(45, 105, 30, 30, TFT_BLUE);
-  tela.drawRect(75, 105, 30, 30, TFT_BLUE);
-  tela.drawRect(105, 105, 30, 30, TFT_BLUE);
-  tela.drawRect(135, 105, 30, 30, TFT_BLUE);
-  tela.drawRect(165, 105, 30, 30, TFT_BLUE);
-  tela.drawRect(195, 105, 30, 30, TFT_BLUE);
-
-  tela.drawRect(15, 135, 30, 30, TFT_BLUE);
-  tela.drawRect(45, 135, 30, 30, TFT_BLUE);
-  tela.drawRect(75, 135, 30, 30, TFT_BLUE);
-  tela.drawRect(105, 135, 30, 30, TFT_BLUE);
-  tela.drawRect(135, 135, 30, 30, TFT_BLUE);
-  tela.drawRect(165, 135, 30, 30, TFT_BLUE);
-  tela.drawRect(195, 135, 30, 30, TFT_BLUE);
-
-  tela.drawRect(15, 165, 30, 30, TFT_BLUE);
-  tela.drawRect(45, 165, 30, 30, TFT_BLUE);
-  tela.drawRect(75, 165, 30, 30, TFT_BLUE);
-  tela.drawRect(105, 165, 30, 30, TFT_BLUE);
-  tela.drawRect(135, 165, 30, 30, TFT_BLUE);
-  tela.drawRect(165, 165, 30, 30, TFT_BLUE);
-  tela.drawRect(195, 165, 30, 30, TFT_BLUE);
-
-  tela.drawRect(15, 195, 30, 30, TFT_BLUE);
-  tela.drawRect(45, 195, 30, 30, TFT_BLUE);
-  tela.drawRect(75, 195, 30, 30, TFT_BLUE);
-  tela.drawRect(105, 195, 30, 30, TFT_BLUE);
-  tela.drawRect(135, 195, 30, 30, TFT_BLUE);
-  tela.drawRect(165, 195, 30, 30, TFT_BLUE);
-  tela.drawRect(195, 195, 30, 30, TFT_BLUE);
-
+  DrawTile("final", 7, 7);
+  DrawTile("inicial", 1, 1);
   DrawPiao(piaoX, piaoY);
 }
