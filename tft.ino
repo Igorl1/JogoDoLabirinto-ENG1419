@@ -11,6 +11,7 @@ JKSButton botao_start, botao_niv, botao_menu, botao_n1, botao_n2, botao_n3;
 MCUFRIEND_kbv tela;
 TouchScreen touch(6, A1, A2, 7, 300);
 int timemax = 60, cronometro, timefinal, modo, piaoX = 1, piaoY = 1, piaoXAnt = 1, piaoYAnt = 1;
+int px[18] = { 2, 2, 2, 4, 4, 4, 6, 6, 6, 6, 6, 5, 5, 4, 3, 3, 2, 2 }, py[18] = { 1, 2, 3, 1, 2, 3, 1, 2, 4, 5, 6, 6, 5, 6, 6, 5, 6, 5 };
 const int piaoR = 15;
 bool ganhou = false;
 unsigned long instAnt = 0, instAnt2 = 0;
@@ -75,6 +76,24 @@ void loop() {
   if (piaoX > 7) {
     piaoX = 7;
   }
+  if (piaoX < 0) {
+    piaoX = 1;
+  }
+  if (piaoY < 0) {
+    piaoX = 1;
+  }
+  if (piaoX == 7 && piaoY == 7) {
+  } 
+  
+  if ((piaoX == 5 && piaoY == 1)||(piaoX == 4 && piaoY == 5)){ // Checkpoint
+  }
+  for (int i = 0; i < sizeof(px); i++) {
+    if (px[i] == piaoX && py[i] == piaoY) {
+      piaoX = piaoXAnt;
+      piaoY = piaoYAnt;
+    }
+  }
+
   if ((piaoX != piaoXAnt && modo == 2) || (piaoY != piaoYAnt && modo == 2)) {
     DrawPiao(piaoX, piaoY);
     DelPiao(piaoXAnt, piaoYAnt);
@@ -203,8 +222,19 @@ void DrawPiao(int piaoX, int piaoY) {
 }
 
 void DelPiao(int piaoX, int piaoY) {
-  tela.fillRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_WHITE);
-  tela.drawRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_BLUE);
+  if(piaoXAnt == 1 && piaoYAnt == 1){
+    tela.fillRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_GREEN);
+    tela.drawRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_BLUE);
+  } else if(piaoXAnt == 7 && piaoYAnt == 7){
+    tela.fillRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_YELLOW);
+    tela.drawRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_BLUE);
+  } else if((piaoXAnt == 5 && piaoYAnt == 1)||(piaoXAnt == 4 && piaoYAnt == 5)){
+    tela.fillRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_RED);
+    tela.drawRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_BLUE);
+  } else{
+    tela.fillRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_WHITE);
+    tela.drawRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_BLUE);
+  }
 }
 
 void Labirinto() {
@@ -226,7 +256,11 @@ void Labirinto() {
     tela.drawRect(195, 15 + aumento, 30, 30, TFT_BLUE);
     aumento = aumento + 30;
   }
-
+  for (int i = 0; i < 18; i++) {
+    DrawTile("parede", px[i], py[i]);
+  }
+  DrawTile("checkpoint", 5, 1);
+  DrawTile("checkpoint", 4, 5);
   DrawTile("final", 7, 7);
   DrawTile("inicial", 1, 1);
   DrawPiao(piaoX, piaoY);
