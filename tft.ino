@@ -13,7 +13,7 @@ TouchScreen touch(6, A1, A2, 7, 300);
 int timemax = 60, cronometro, timefinal, modo, piaoX = 1, piaoY = 1, piaoXAnt = 1, piaoYAnt = 1;
 int px[18] = { 2, 2, 2, 4, 4, 4, 6, 6, 6, 6, 6, 5, 5, 4, 3, 3, 2, 2 }, py[18] = { 1, 2, 3, 1, 2, 3, 1, 2, 4, 5, 6, 6, 5, 6, 6, 5, 6, 5 };
 const int piaoR = 15;
-bool ganhou = false;
+bool ganhou = false, comecou = false;
 unsigned long instAnt = 0, instAnt2 = 0;
 Coord coords;
 
@@ -80,9 +80,10 @@ void loop() {
     piaoX = 1;
   }
   if (piaoY < 0) {
-    piaoX = 1;
+    piaoY = 1;
   }
   if (piaoX == 7 && piaoY == 7) {
+    ganhou = true;
   } 
   
   if ((piaoX == 5 && piaoY == 1)||(piaoX == 4 && piaoY == 5)){ // Checkpoint
@@ -100,7 +101,7 @@ void loop() {
   }
 }
 
-void UpdateCronometro() {
+void UpdateCronometro() { // Atualiza o cronometro (dentro do loop para atualizar a cada segundo)
   if (modo == 2) {
     tela.setCursor(15, 250);
     tela.setTextColor(TFT_WHITE);
@@ -123,7 +124,7 @@ void ResetCronometro() {
   cronometro = timemax;
 }
 
-void Menu() {
+void Menu() { // Inicializa a tela menu
   ResetCronometro();
   modo = 1;
   tela.fillScreen(TFT_BLACK);
@@ -140,7 +141,7 @@ void Menu() {
   tela.println("Turma 3VA");
 }
 
-void Select() {
+void Select() { // Inicializa a tela de seleção
   modo = 3;
   tela.fillScreen(TFT_BLACK);
   botao_n1.init(&tela, &touch, 120, 110, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "90 Seg", 2);
@@ -153,7 +154,7 @@ void Select() {
   tela.println("Tempo de Jogo");
 }
 
-void End() {
+void End() {  // Inicializa a tela final
   char str[1];
   int timedecorrido = timemax - timefinal, minutos = timedecorrido / 60, segundos = timedecorrido % 60;
   ResetCronometro();
@@ -188,7 +189,7 @@ void N3() {
   Menu();
 }
 
-void Mapeamento() {
+void Mapeamento() {  // Transforma coordenas puras no lcd nas coordenas do tabuleiro (1,1) até (7,7)
   int coordx = 0, coordy = 0, x_ini = 7, y_ini = 7;
   for (int i = 0; i < 7; ++i) {
     coordx += 30;
@@ -200,7 +201,7 @@ void Mapeamento() {
   }
 }
 
-void DrawTile(String str, int x, int y) {
+void DrawTile(String str, int x, int y) { // Desenha o quadrado colorido especificado
   if (str == "parede") {
     tela.fillRect(coords.x[x] - 15, coords.y[y] - 15, 30, 30, TFT_BLACK);
     tela.drawRect(coords.x[x] - 15, coords.y[y] - 15, 30, 30, TFT_BLUE);
@@ -216,12 +217,12 @@ void DrawTile(String str, int x, int y) {
   }
 }
 
-void DrawPiao(int piaoX, int piaoY) {
+void DrawPiao(int piaoX, int piaoY) { // Desenha na posicao desejada do piao
   tela.fillCircle(coords.x[piaoX], coords.y[piaoY], piaoR, TFT_BLUE);
   tela.drawCircle(coords.x[piaoX], coords.y[piaoY], piaoR, TFT_BLACK);
 }
 
-void DelPiao(int piaoX, int piaoY) {
+void DelPiao(int piaoX, int piaoY) { // Deleta posicao desejada do piao
   if(piaoXAnt == 1 && piaoYAnt == 1){
     tela.fillRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_GREEN);
     tela.drawRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_BLUE);
@@ -237,7 +238,10 @@ void DelPiao(int piaoX, int piaoY) {
   }
 }
 
-void Labirinto() {
+void Labirinto() {   // Desenha o labirinto
+  ganhou = false;
+  comecou = true;
+  Serial.println("comecou");
   int aumento = 0;
   modo = 2;
   tela.fillScreen(TFT_BLACK);
