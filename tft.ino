@@ -7,11 +7,16 @@ typedef struct {
   int y[8];
 } Coord;
 
+typedef enum Modo { MENU = 1,
+                    LAB = 2,
+                    SEL = 3,
+                    END = 4 };
+
 JKSButton botao_start, botao_niv, botao_menu, botao_n1, botao_n2, botao_n3;
 MCUFRIEND_kbv tela;
 TouchScreen touch(6, A1, A2, 7, 300);
-int timemax = 60, cronometro, timefinal, modo, piaoX = 1, piaoY = 1, piaoXAnt = 1, piaoYAnt = 1;
-int px[18] = { 2, 2, 2, 4, 4, 4, 6, 6, 6, 6, 6, 5, 5, 4, 3, 3, 2, 2 }, py[18] = { 1, 2, 3, 1, 2, 3, 1, 2, 4, 5, 6, 6, 5, 6, 6, 5, 6, 5 };
+int timemax = 60, cronometro, timefinal, modo, piaoX = 1, piaoY = 1, piaoXAnt = 1, piaoYAnt = 1, iniX, iniY, fimX, fimY, cX[2], cY[2];
+int pX[18] = { 2, 2, 2, 4, 4, 4, 6, 6, 6, 6, 6, 5, 5, 4, 3, 3, 2, 2 }, pY[18] = { 1, 2, 3, 1, 2, 3, 1, 2, 4, 5, 6, 6, 5, 6, 6, 5, 6, 5 };
 const int piaoR = 15;
 bool ganhou = false, comecou = false;
 unsigned long instAnt = 0, instAnt2 = 0;
@@ -31,23 +36,34 @@ void setup(void) {
 }
 
 void loop() {
-  if (modo == 1) {  // Menu
+  if (modo == MENU) {
     botao_start.process();
     botao_niv.process();
-  } else if (modo == 2) {  // Labirinto
+  } else if (modo == LAB) {
     botao_menu.process();
-  } else if (modo == 3) {  // Select
+  } else if (modo == SEL) {
     botao_n1.process();
     botao_n2.process();
     botao_n3.process();
-  } else if (modo == 4) {  // End
+  } else if (modo == END) {
     botao_start.process();
     botao_menu.process();
   }
 
   if (Serial.available() >= 4) {
-    piaoX = Serial.parseInt();
-    piaoY = Serial.parseInt();
+    if (comecou == true) {
+      piaoX = Serial.parseInt();
+      piaoY = Serial.parseInt();
+    } else {
+      iniX = Serial.parseInt();
+      iniY = Serial.parseInt();
+      fimX = Serial.parseInt();
+      fimY = Serial.parseInt();
+      for (int i = 0; i < 2; i++) {
+        cX[i] = Serial.parseInt();
+        cY[i] = Serial.parseInt();
+      }
+    }
   }
 
   unsigned long instAtual = millis();
@@ -58,7 +74,7 @@ void loop() {
 
   unsigned long instAtual2 = millis();
   if (instAtual2 > instAnt2 + 250) {
-    if (modo == 2) {
+    if (modo == LAB) {
       piaoXAnt = piaoX;
       piaoYAnt = piaoY;
     } else {
@@ -82,27 +98,25 @@ void loop() {
   if (piaoY < 0) {
     piaoY = 1;
   }
-  if (piaoX == 7 && piaoY == 7) {
+  if (piaoX == fimX && piaoY == fimY) {
     ganhou = true;
-  } 
-  
-  if ((piaoX == 5 && piaoY == 1)||(piaoX == 4 && piaoY == 5)){ // Checkpoint
   }
-  for (int i = 0; i < sizeof(px); i++) {
-    if (px[i] == piaoX && py[i] == piaoY) {
+
+  for (int i = 0; i < sizeof(pX); i++) {
+    if (pX[i] == piaoX && pY[i] == piaoY) {
       piaoX = piaoXAnt;
       piaoY = piaoYAnt;
     }
   }
 
-  if ((piaoX != piaoXAnt && modo == 2) || (piaoY != piaoYAnt && modo == 2)) {
+  if ((piaoX != piaoXAnt && modo == LAB) || (piaoY != piaoYAnt && modo == LAB)) {
     DrawPiao(piaoX, piaoY);
     DelPiao(piaoXAnt, piaoYAnt);
   }
 }
 
-void UpdateCronometro() { // Atualiza o cronometro (dentro do loop para atualizar a cada segundo)
-  if (modo == 2) {
+void UpdateCronometro() {  // Atualiza o cronometro (dentro do loop para atualizar a cada segundo)
+  if (modo == LAB) {
     tela.setCursor(15, 250);
     tela.setTextColor(TFT_WHITE);
     tela.setTextSize(2);
@@ -124,9 +138,9 @@ void ResetCronometro() {
   cronometro = timemax;
 }
 
-void Menu() { // Inicializa a tela menu
+void Menu() {  // Inicializa a tela menu
   ResetCronometro();
-  modo = 1;
+  modo = MENU;
   tela.fillScreen(TFT_BLACK);
   botao_start.init(&tela, &touch, 120, 140, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Jogar", 2);
   botao_niv.init(&tela, &touch, 120, 220, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Config", 2);
@@ -141,8 +155,8 @@ void Menu() { // Inicializa a tela menu
   tela.println("Turma 3VA");
 }
 
-void Select() { // Inicializa a tela de seleção
-  modo = 3;
+void Select() {  // Inicializa a tela de seleção
+  modo = SEL;
   tela.fillScreen(TFT_BLACK);
   botao_n1.init(&tela, &touch, 120, 110, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "90 Seg", 2);
   botao_n2.init(&tela, &touch, 120, 190, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "60 Seg", 2);
@@ -158,7 +172,7 @@ void End() {  // Inicializa a tela final
   char str[1];
   int timedecorrido = timemax - timefinal, minutos = timedecorrido / 60, segundos = timedecorrido % 60;
   ResetCronometro();
-  modo = 4;
+  modo = END;
   tela.fillScreen(TFT_BLACK);
   botao_start.init(&tela, &touch, 120, 150, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Novo Jogo", 2);
   botao_menu.init(&tela, &touch, 120, 230, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Menu", 2);
@@ -191,7 +205,7 @@ void N3() {
 
 void Mapeamento() {  // Transforma coordenas puras no lcd nas coordenas do tabuleiro (1,1) até (7,7)
   int coordx = 0, coordy = 0, x_ini = 7, y_ini = 7;
-  for (int i = 0; i < 7; ++i) {
+  for (int i = 0; i < 7; i++) {
     coordx += 30;
     coordy += 30;
     coords.x[x_ini] = coordx;
@@ -201,7 +215,7 @@ void Mapeamento() {  // Transforma coordenas puras no lcd nas coordenas do tabul
   }
 }
 
-void DrawTile(String str, int x, int y) { // Desenha o quadrado colorido especificado
+void DrawTile(String str, int x, int y) {  // Desenha o quadrado colorido especificado
   if (str == "parede") {
     tela.fillRect(coords.x[x] - 15, coords.y[y] - 15, 30, 30, TFT_BLACK);
     tela.drawRect(coords.x[x] - 15, coords.y[y] - 15, 30, 30, TFT_BLUE);
@@ -217,33 +231,33 @@ void DrawTile(String str, int x, int y) { // Desenha o quadrado colorido especif
   }
 }
 
-void DrawPiao(int piaoX, int piaoY) { // Desenha na posicao desejada do piao
+void DrawPiao(int piaoX, int piaoY) {  // Desenha na posicao desejada do piao
   tela.fillCircle(coords.x[piaoX], coords.y[piaoY], piaoR, TFT_BLUE);
   tela.drawCircle(coords.x[piaoX], coords.y[piaoY], piaoR, TFT_BLACK);
 }
 
-void DelPiao(int piaoX, int piaoY) { // Deleta posicao desejada do piao
-  if(piaoXAnt == 1 && piaoYAnt == 1){
+void DelPiao(int piaoX, int piaoY) {  // Deleta posicao desejada do piao
+  if (piaoXAnt == iniX && piaoYAnt == iniY) {
     tela.fillRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_GREEN);
     tela.drawRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_BLUE);
-  } else if(piaoXAnt == 7 && piaoYAnt == 7){
+  } else if (piaoXAnt == fimX && piaoYAnt == fimY) {
     tela.fillRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_YELLOW);
     tela.drawRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_BLUE);
-  } else if((piaoXAnt == 5 && piaoYAnt == 1)||(piaoXAnt == 4 && piaoYAnt == 5)){
+  } else if ((piaoXAnt == 5 && piaoYAnt == 1) || (piaoXAnt == 4 && piaoYAnt == 5)) {
     tela.fillRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_RED);
     tela.drawRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_BLUE);
-  } else{
+  } else {
     tela.fillRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_WHITE);
     tela.drawRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_BLUE);
   }
 }
 
-void Labirinto() {   // Desenha o labirinto
+void Labirinto() {  // Desenha o labirinto
   ganhou = false;
   comecou = true;
   Serial.println("comecou");
   int aumento = 0;
-  modo = 2;
+  modo = LAB;
   tela.fillScreen(TFT_BLACK);
 
   botao_menu.init(&tela, &touch, 180, 275, 80, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Menu", 2);
@@ -261,11 +275,12 @@ void Labirinto() {   // Desenha o labirinto
     aumento = aumento + 30;
   }
   for (int i = 0; i < 18; i++) {
-    DrawTile("parede", px[i], py[i]);
+    DrawTile("parede", pX[i], pY[i]);
   }
-  DrawTile("checkpoint", 5, 1);
-  DrawTile("checkpoint", 4, 5);
-  DrawTile("final", 7, 7);
-  DrawTile("inicial", 1, 1);
+  for (int i = 0; i < 2; i++) {
+    DrawTile("checkpoint", cX[i], cY[i]);
+  }
+  DrawTile("final", fimX, fimY);
+  DrawTile("inicial", iniX, iniY);
   DrawPiao(piaoX, piaoY);
 }
