@@ -8,6 +8,7 @@
 #include <TouchScreen.h>
 #include <JKSButton.h>
 #include <MCUFRIEND_kbv.h>
+#include <EEPROM.h>
 
 typedef struct {
   int x[8];
@@ -17,16 +18,17 @@ typedef struct {
 typedef enum Modo { MENU = 1,
                     LAB = 2,
                     SEL = 3,
-                    END = 4 };
+                    END = 4,
+                    SCORE = 5 };
 
-JKSButton botao_start, botao_niv, botao_menu, botao_n1, botao_n2, botao_n3;
+JKSButton botao_start, botao_niv, botao_menu, botao_n1, botao_n2, botao_n3, botao_score;
 MCUFRIEND_kbv tela;
-TouchScreen touch(6, A1, A2, 7, 300);
-int timemax = 60, cronometro, timefinal, modo, piaoX, piaoY, piaoXAnt, piaoYAnt, iniX = 1, iniY = 1, fimX = 7, fimY = 7, cX[2], cY[2], pX[18], pY[18];
-const int piaoR = 15;
-bool ganhou = false, comecou = false;
-unsigned long instAnt = 0, instAnt2 = 0;
 Coord coords;
+TouchScreen touch(6, A1, A2, 7, 300);
+int timemax = 60, cronometro, timefinal, modo, piaoX, piaoY, piaoXAnt, piaoYAnt, iniX = 1, iniY = 1, fimX = 7, fimY = 7, pm1X = 1, pm1Y = 6, pm2X = 6, pm2Y = 3, cX[2], cY[2], pX[18], pY[18];
+const int piaoR = 15;
+bool ganhou = false, comecou = false, estacheck = false;
+unsigned long instAnt = 0, instAnt2 = 0;
 
 void setup(void) {
   Serial.begin(9600);
@@ -36,6 +38,7 @@ void setup(void) {
   botao_start.setPressHandler(Labirinto);
   botao_niv.setPressHandler(Select);
   botao_menu.setPressHandler(Menu);
+  botao_score.setPressHandler(Score);
   botao_n1.setPressHandler(N1);
   botao_n2.setPressHandler(N2);
   botao_n3.setPressHandler(N3);
@@ -45,6 +48,7 @@ void loop() {
   if (modo == MENU) {
     botao_start.process();
     botao_niv.process();
+    botao_score.process();
   } else if (modo == LAB) {
     botao_menu.process();
   } else if (modo == SEL) {
@@ -54,8 +58,9 @@ void loop() {
   } else if (modo == END) {
     botao_start.process();
     botao_menu.process();
+  } else if (modo == SCORE) {
+    botao_menu.process();
   }
-
 
   if (Serial.available() > 0) {
     String input = Serial.readStringUntil('\n');
@@ -66,81 +71,97 @@ void loop() {
     if (input.startsWith("i")) {
       iniX = input.substring(3, 4).toInt();
       iniY = input.substring(7, 8).toInt();
-      Serial.println("casas iniciais registradas");
+      Serial.println("Casa inicial registrada");
     }
     if (input.startsWith("f")) {
       fimX = input.substring(3, 4).toInt();
       fimY = input.substring(7, 8).toInt();
-      Serial.println("casas finais registradas");
+      Serial.println("Casa final registrada");
     }
     if (input.startsWith("c")) {
       int a = 0;
       for (int i = 0; i < sizeof(cX) / sizeof(cX[0]); i++) {
-        cX[i] = input.substring(3+a, 4+a).toInt();
-        cY[i] = input.substring(7+a, 8+a).toInt();
+        cX[i] = input.substring(3 + a, 4 + a).toInt();
+        cY[i] = input.substring(7 + a, 8 + a).toInt();
         a = a + 10;
       }
-      Serial.println("casas checkpoint registradas");
+      Serial.println("Casas checkpoint registradas");
     }
     if (input.startsWith("p")) {
       int a = 0;
       for (int i = 0; i < sizeof(pX) / sizeof(pX[0]); i++) {
-        pX[i] = input.substring(3+a, 4+a).toInt();
-        pY[i] = input.substring(7+a, 8+a).toInt();
+        pX[i] = input.substring(3 + a, 4 + a).toInt();
+        pY[i] = input.substring(7 + a, 8 + a).toInt();
         a = a + 10;
       }
-      Serial.println("casas parede registradas");
+      Serial.println("Casas parede registradas");
     }
   }
 
-unsigned long instAtual = millis();
-if (instAtual > instAnt + 1000) {
-  UpdateCronometro();
-  instAnt = instAtual;
-}
-
-unsigned long instAtual2 = millis();
-if (instAtual2 > instAnt2 + 250) {
-  if (modo == LAB) {
-    piaoXAnt = piaoX;
-    piaoYAnt = piaoY;
-  } else {
-    piaoX = iniX;
-    piaoY = iniY;
-    piaoXAnt = iniX;
-    piaoYAnt = iniY;
+  unsigned long instAtual = millis();
+  if (instAtual > instAnt + 1000) {
+    UpdateCronometro();
+    instAnt = instAtual;
   }
-  if (piaoX == fimX && piaoY == fimY) {
-    ganhou = true;
-    End();
+
+  unsigned long instAtual2 = millis();
+  if (instAtual2 > instAnt2 + 250) {
+    if (modo == LAB) {
+      piaoXAnt = piaoX;
+      piaoYAnt = piaoY;
+    } else {
+      piaoX = iniX;
+      piaoY = iniY;
+      piaoXAnt = iniX;
+      piaoYAnt = iniY;
+    }
+    if (piaoX == fimX && piaoY == fimY) {
+      ganhou = true;
+      End();
+    }
+    instAnt2 = instAtual2;
   }
-  instAnt2 = instAtual2;
-}
 
-if (piaoY > 7) {
-  piaoY = 7;
-}
-if (piaoX > 7) {
-  piaoX = 7;
-}
-if (piaoX < 0) {
-  piaoX = 1;
-}
-if (piaoY < 0) {
-  piaoY = 1;
-}
-
-for (int i = 0; i < sizeof(pX) / sizeof(pX[0]); i++) {
-  if (pX[i] == piaoX && pY[i] == piaoY) {
-    piaoX = piaoXAnt;
-    piaoY = piaoYAnt;
+  if (piaoY > 7) {
+    piaoY = 7;
   }
-}
+  if (piaoX > 7) {
+    piaoX = 7;
+  }
+  if (piaoX < 0) {
+    piaoX = 1;
+  }
+  if (piaoY < 0) {
+    piaoY = 1;
+  }
 
-if ((piaoX != piaoXAnt && modo == LAB) || (piaoY != piaoYAnt && modo == LAB)) {
-  DrawPiao(piaoX, piaoY);
-  DelPiao(piaoXAnt, piaoYAnt);
-}
+  for (int i = 0; i < sizeof(pX) / sizeof(pX[0]); i++) {
+    if (pX[i] == piaoX && pY[i] == piaoY) {
+      piaoX = piaoXAnt;
+      piaoY = piaoYAnt;
+    }
+  }
+  /*
+  for (int i = 0; i < sizeof(cX) / sizeof(cX[0]); i++) {
+    if (cX[i] == piaoX && cY[i] == piaoY) {
+      estacheck = true;
+    } else {
+      estacheck = false;
+    }
+  }
+
+  if (modo == LAB && estacheck == true) {
+    DrawTile("parede", pm1X, pm1Y);
+    DrawTile("parede", pm2X, pm2Y);
+  } else if (modo == LAB && estacheck == false) {
+    DrawTile("normal", pm1X, pm1Y);
+    DrawTile("normal", pm2X, pm2Y);
+  }
+  */
+  if ((piaoX != piaoXAnt && modo == LAB) || (piaoY != piaoYAnt && modo == LAB)) {
+    DrawPiao(piaoX, piaoY);
+    DelPiao(piaoXAnt, piaoYAnt);
+  }
 }
 
 void UpdateCronometro() {  // Atualiza o cronometro (dentro do loop para atualizar a cada segundo)
@@ -167,21 +188,43 @@ void ResetCronometro() {
 }
 
 void Menu() {  // Inicializa a tela menu
+  modo = MENU;
   comecou = false;
   ResetCronometro();
-  modo = MENU;
   tela.fillScreen(TFT_BLACK);
-  botao_start.init(&tela, &touch, 120, 140, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Jogar", 2);
-  botao_niv.init(&tela, &touch, 120, 220, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Config", 2);
-  tela.fillRect(18, 38, 204, 32, TFT_BLUE);
-  tela.setCursor(20, 40);
+  botao_start.init(&tela, &touch, 120, 110, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Jogar", 2);
+  botao_score.init(&tela, &touch, 120, 190, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Score", 2);
+  botao_niv.init(&tela, &touch, 120, 270, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Config", 2);
+  tela.fillRect(18, 18, 204, 32, TFT_BLUE);
+  tela.setCursor(20, 20);
   tela.setTextColor(TFT_WHITE);
   tela.setTextSize(2);
   tela.println("Jogo do Labirinto");
-  tela.setCursor(93, 60);
+  tela.setCursor(93, 40);
   tela.setTextColor(TFT_WHITE);
   tela.setTextSize(1);
   tela.println("Turma 3VA");
+}
+
+void Score() {  // Inicializa a tela de score
+  char str[5];
+  modo = SCORE;
+  tela.fillScreen(TFT_BLACK);
+  botao_menu.init(&tela, &touch, 120, 160, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Menu", 2);
+  tela.fillRect(0, 75, 165, 25, TFT_BLUE);
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(3);
+  tela.setCursor(10, 40);
+  tela.println("Ultimo score");
+  tela.setTextSize(2);
+  tela.setCursor(20, 80);
+  tela.print("Tempo: ");
+  if (isnan(EEPROM.read(0)) || isnan(EEPROM.read(3))) {
+    tela.print("Nao registrado");
+  } else {
+    sprintf(str, "%d:%.2d", EEPROM.read(0), EEPROM.read(3));
+    tela.print(str);
+  }
 }
 
 void Select() {  // Inicializa a tela de seleção
@@ -191,18 +234,18 @@ void Select() {  // Inicializa a tela de seleção
   botao_n2.init(&tela, &touch, 120, 190, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "60 Seg", 2);
   botao_n3.init(&tela, &touch, 120, 270, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "30 Seg", 2);
   tela.fillRect(0, 38, 185, 20, TFT_BLUE);
-  tela.setCursor(19, 40);
+  tela.setCursor(20, 40);
   tela.setTextColor(TFT_WHITE);
   tela.setTextSize(2);
   tela.println("Tempo de Jogo");
 }
 
 void End() {  // Inicializa a tela final
+  modo = END;
+  comecou = false;
   char str[5];
   int timedecorrido = timemax - timefinal, minutos = timedecorrido / 60, segundos = timedecorrido % 60;
   ResetCronometro();
-  modo = END;
-  comecou = false;
   tela.fillScreen(TFT_BLACK);
   botao_start.init(&tela, &touch, 120, 150, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Novo Jogo", 2);
   botao_menu.init(&tela, &touch, 120, 230, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Menu", 2);
@@ -216,6 +259,8 @@ void End() {  // Inicializa a tela final
   tela.print("Tempo: ");
   sprintf(str, "%d:%.2d", minutos, segundos);
   tela.print(str);
+  EEPROM.write(0, minutos);
+  EEPROM.write(3, segundos);
 }
 
 void N1() {
@@ -258,6 +303,9 @@ void DrawTile(String str, int x, int y) {  // Desenha o quadrado colorido especi
   } else if (str == "inicial") {
     tela.fillRect(coords.x[x] - 15, coords.y[y] - 15, 30, 30, TFT_GREEN);
     tela.drawRect(coords.x[x] - 15, coords.y[y] - 15, 30, 30, TFT_BLUE);
+  } else if (str == "normal") {
+    tela.fillRect(coords.x[x] - 15, coords.y[y] - 15, 30, 30, TFT_WHITE);
+    tela.drawRect(coords.x[x] - 15, coords.y[y] - 15, 30, 30, TFT_BLUE);
   }
 }
 
@@ -278,7 +326,7 @@ void DelPiao(int piaoX, int piaoY) {  // Deleta posicao desejada do piao
     tela.drawRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_BLUE);
   }
   for (int i = 0; i < sizeof(cX) / sizeof(cX[0]); i++) {
-    if (piaoXAnt == cX[i] && piaoYAnt == cY[i]){
+    if (piaoXAnt == cX[i] && piaoYAnt == cY[i]) {
       tela.fillRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_RED);
       tela.drawRect(coords.x[piaoX] - 15, coords.y[piaoY] - 15, 30, 30, TFT_BLUE);
     }
