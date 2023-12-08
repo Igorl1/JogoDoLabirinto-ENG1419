@@ -145,17 +145,12 @@ void loop() {
   for (int i = 0; i < sizeof(cX) / sizeof(cX[0]); i++) {
     if (cX[i] == piaoX && cY[i] == piaoY) {
       estacheck = true;
+      Serial.println("Esta no checkpoint");
+      break;
     } else {
       estacheck = false;
+      Serial.println("Nao esta no checkpoint");
     }
-  }
-
-  if (modo == LAB && estacheck == true) {
-    DrawTile("parede", pm1X, pm1Y);
-    DrawTile("parede", pm2X, pm2Y);
-  } else if (modo == LAB && estacheck == false) {
-    DrawTile("normal", pm1X, pm1Y);
-    DrawTile("normal", pm2X, pm2Y);
   }
   */
   if ((piaoX != piaoXAnt && modo == LAB) || (piaoY != piaoYAnt && modo == LAB)) {
