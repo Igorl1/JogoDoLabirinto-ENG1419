@@ -11,8 +11,7 @@
 #include <EEPROM.h>
 
 typedef struct {
-  int x[8];
-  int y[8];
+  int x[8], y[8];
 } Coord;
 
 typedef enum Modo { MENU = 1,
@@ -27,7 +26,7 @@ Coord coords;
 TouchScreen touch(6, A1, A2, 7, 300);
 int timemax = 60, cronometro, timefinal, modo, piaoX, piaoY, piaoXAnt, piaoYAnt, iniX = 1, iniY = 1, fimX = 7, fimY = 7, pm1X = 1, pm1Y = 6, pm2X = 6, pm2Y = 3, cX[2], cY[2], pX[18], pY[18];
 const int piaoR = 15;
-bool ganhou = false, comecou = false, estacheck = false;
+bool ganhou = false, comecou = false, ganhoufinal;
 unsigned long instAnt = 0, instAnt2 = 0;
 
 void setup(void) {
@@ -67,6 +66,7 @@ void loop() {
     if (input.startsWith("b")) {
       piaoX = input.substring(3, 4).toInt();
       piaoY = input.substring(7, 8).toInt();
+      Serial.println("Bola movimentada");
     }
     if (input.startsWith("i")) {
       iniX = input.substring(3, 4).toInt();
@@ -109,11 +109,6 @@ void loop() {
     if (modo == LAB) {
       piaoXAnt = piaoX;
       piaoYAnt = piaoY;
-    } else {
-      piaoX = iniX;
-      piaoY = iniY;
-      piaoXAnt = iniX;
-      piaoYAnt = iniY;
     }
     if (piaoX == fimX && piaoY == fimY) {
       ganhou = true;
@@ -134,25 +129,34 @@ void loop() {
   if (piaoY < 0) {
     piaoY = 1;
   }
-
+  /*
+  if (modo == LAB) {
+    for (int i = 0; i < sizeof(cX) / sizeof(cX[0]); i++) {
+      if (cX[i] == piaoX && cY[i] == piaoY) {
+        estacheck = true;
+        Serial.println("Esta no checkpoint");
+        break;
+      } else {
+        estacheck = false;
+        Serial.println("Nao esta no checkpoint");
+      }
+    }
+  }
+  */
+  if (modo != LAB) {
+    piaoX = iniX;
+    piaoY = iniY;
+    piaoXAnt = iniX;
+    piaoYAnt = iniY;
+  }
+  
   for (int i = 0; i < sizeof(pX) / sizeof(pX[0]); i++) {
     if (pX[i] == piaoX && pY[i] == piaoY) {
       piaoX = piaoXAnt;
       piaoY = piaoYAnt;
     }
   }
-  /*
-  for (int i = 0; i < sizeof(cX) / sizeof(cX[0]); i++) {
-    if (cX[i] == piaoX && cY[i] == piaoY) {
-      estacheck = true;
-      Serial.println("Esta no checkpoint");
-      break;
-    } else {
-      estacheck = false;
-      Serial.println("Nao esta no checkpoint");
-    }
-  }
-  */
+  
   if ((piaoX != piaoXAnt && modo == LAB) || (piaoY != piaoYAnt && modo == LAB)) {
     DrawPiao(piaoX, piaoY);
     DelPiao(piaoXAnt, piaoYAnt);
@@ -188,7 +192,7 @@ void Menu() {  // Inicializa a tela menu
   ResetCronometro();
   tela.fillScreen(TFT_BLACK);
   botao_start.init(&tela, &touch, 120, 110, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Jogar", 2);
-  botao_score.init(&tela, &touch, 120, 190, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Score", 2);
+  botao_score.init(&tela, &touch, 120, 190, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Historico", 2);
   botao_niv.init(&tela, &touch, 120, 270, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Config", 2);
   tela.fillRect(18, 18, 204, 32, TFT_BLUE);
   tela.setCursor(20, 20);
@@ -206,17 +210,21 @@ void Score() {  // Inicializa a tela de score
   modo = SCORE;
   tela.fillScreen(TFT_BLACK);
   botao_menu.init(&tela, &touch, 120, 160, 170, 50, TFT_BLUE, TFT_BLUE, TFT_WHITE, "Menu", 2);
-  tela.fillRect(0, 75, 165, 25, TFT_BLUE);
+  tela.fillRect(0, 75, 185, 25, TFT_BLUE);
   tela.setTextColor(TFT_WHITE);
   tela.setTextSize(3);
   tela.setCursor(10, 40);
   tela.println("Ultimo score");
   tela.setTextSize(2);
   tela.setCursor(20, 80);
-  tela.print("Tempo: ");
-  if (isnan(EEPROM.read(0)) || isnan(EEPROM.read(3))) {
+  if (isnan(EEPROM.read(0)) || isnan(EEPROM.read(3)) || isnan(EEPROM.read(6))) {
     tela.print("Nao registrado");
   } else {
+    if (EEPROM.read(6) == 1) {
+      tela.print("Vitoria: ");
+    } else {
+      tela.print("Derrota: ");
+    }
     sprintf(str, "%d:%.2d", EEPROM.read(0), EEPROM.read(3));
     tela.print(str);
   }
@@ -249,6 +257,7 @@ void End() {  // Inicializa a tela final
   tela.setTextSize(3);
   tela.setCursor(20, 40);
   tela.println(ganhou ? "Vitoria" : "Derrota");
+  ganhoufinal = ganhou;
   tela.setTextSize(2);
   tela.setCursor(20, 80);
   tela.print("Tempo: ");
@@ -256,6 +265,7 @@ void End() {  // Inicializa a tela final
   tela.print(str);
   EEPROM.write(0, minutos);
   EEPROM.write(3, segundos);
+  EEPROM.write(6, ganhoufinal);
 }
 
 void N1() {
