@@ -109,57 +109,44 @@ void loop() {
     if (modo == LAB) {
       piaoXAnt = piaoX;
       piaoYAnt = piaoY;
-    }
-    if (piaoX == fimX && piaoY == fimY) {
-      ganhou = true;
-      End();
+      if (piaoX == fimX && piaoY == fimY) {
+        ganhou = true;
+        End();
+      }
     }
     instAnt2 = instAtual2;
   }
-
-  if (piaoY > 7) {
-    piaoY = 7;
-  }
-  if (piaoX > 7) {
-    piaoX = 7;
-  }
-  if (piaoX < 0) {
-    piaoX = 1;
-  }
-  if (piaoY < 0) {
-    piaoY = 1;
-  }
-  /*
-  if (modo == LAB) {
-    for (int i = 0; i < sizeof(cX) / sizeof(cX[0]); i++) {
-      if (cX[i] == piaoX && cY[i] == piaoY) {
-        estacheck = true;
-        Serial.println("Esta no checkpoint");
-        break;
-      } else {
-        estacheck = false;
-        Serial.println("Nao esta no checkpoint");
-      }
-    }
-  }
-  */
+  
   if (modo != LAB) {
     piaoX = iniX;
     piaoY = iniY;
     piaoXAnt = iniX;
     piaoYAnt = iniY;
   }
-  
-  for (int i = 0; i < sizeof(pX) / sizeof(pX[0]); i++) {
-    if (pX[i] == piaoX && pY[i] == piaoY) {
-      piaoX = piaoXAnt;
-      piaoY = piaoYAnt;
+
+  if (modo == LAB) {
+    if (piaoY > 7) {
+      piaoY = 7;
     }
-  }
-  
-  if ((piaoX != piaoXAnt && modo == LAB) || (piaoY != piaoYAnt && modo == LAB)) {
-    DrawPiao(piaoX, piaoY);
-    DelPiao(piaoXAnt, piaoYAnt);
+    if (piaoX > 7) {
+      piaoX = 7;
+    }
+    if (piaoX < 0) {
+      piaoX = 1;
+    }
+    if (piaoY < 0) {
+      piaoY = 1;
+    }
+    for (int i = 0; i < sizeof(pX) / sizeof(pX[0]); i++) {
+      if (pX[i] == piaoX && pY[i] == piaoY) {
+        piaoX = piaoXAnt;
+        piaoY = piaoYAnt;
+      }
+    } 
+    if ((piaoX != piaoXAnt) || (piaoY != piaoYAnt)) {
+      DrawPiao(piaoX, piaoY);
+      DelPiao(piaoXAnt, piaoYAnt);
+    }
   }
 }
 
@@ -213,8 +200,8 @@ void Score() {  // Inicializa a tela de score
   tela.fillRect(0, 75, 185, 25, TFT_BLUE);
   tela.setTextColor(TFT_WHITE);
   tela.setTextSize(3);
-  tela.setCursor(10, 40);
-  tela.println("Ultimo score");
+  tela.setCursor(20, 40);
+  tela.println("Ultimo jogo");
   tela.setTextSize(2);
   tela.setCursor(20, 80);
   if (isnan(EEPROM.read(0)) || isnan(EEPROM.read(3)) || isnan(EEPROM.read(6))) {
@@ -361,10 +348,18 @@ void Labirinto() {  // Desenha o labirinto
     aumento = aumento + 30;
   }
   for (int i = 0; i < sizeof(pX) / sizeof(pX[0]); i++) {
-    DrawTile("parede", pX[i], pY[i]);
+    if (pX[i] == NULL && pY[i] == NULL) {
+      DrawTile("parede", 10, 10);
+    } else {
+      DrawTile("parede", pX[i], pY[i]);
+    }
   }
   for (int i = 0; i < sizeof(cX) / sizeof(cX[0]); i++) {
-    DrawTile("checkpoint", cX[i], cY[i]);
+    if (cX[i] == NULL && cY[i] == NULL) {
+      DrawTile("checkpoint", 10, 10);
+    } else {
+      DrawTile("checkpoint", cX[i], cY[i]);
+    }
   }
   DrawTile("final", fimX, fimY);
   DrawTile("inicial", iniX, iniY);
