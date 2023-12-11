@@ -25,12 +25,16 @@ MCUFRIEND_kbv tela;
 Coord coords;
 TouchScreen touch(6, A1, A2, 7, 300);
 int timemax = 60, cronometro, timefinal, modo, piaoX, piaoY, piaoXAnt, piaoYAnt, iniX = 1, iniY = 1, fimX = 7, fimY = 7, pm1X = 1, pm1Y = 6, pm2X = 6, pm2Y = 3, cX[2], cY[2], pX[18], pY[18];
+int pXestatico[18] = { 2, 2, 2, 4, 4, 4, 6, 6, 6, 6, 6, 5, 5, 4, 3, 3, 2, 2 }, pYestatico[18] = { 1, 2, 3, 1, 2, 3, 1, 2, 4, 5, 6, 6, 5, 6, 6, 5, 6, 5 };
 const int piaoR = 15;
-bool ganhou = false, comecou = false, ganhoufinal;
+bool ganhou = false, comecou = false, ganhoufinal, estacheck = false;
 unsigned long instAnt = 0, instAnt2 = 0;
 
 void setup(void) {
-  Serial.begin(9600);
+  Serial.begin(115200);
+  Serial.setTimeout(1000);
+  Serial1.begin(9600);
+  Serial1.setTimeout(10);
   tela.begin(tela.readID());
   Menu();
   Mapeamento();
@@ -64,37 +68,43 @@ void loop() {
   if (Serial.available() > 0) {
     String input = Serial.readStringUntil('\n');
     if (input.startsWith("b")) {
-      piaoX = input.substring(3, 4).toInt();
-      piaoY = input.substring(7, 8).toInt();
+      piaoX = input.substring(2, 3).toInt();
+      piaoY = input.substring(4, 5).toInt();
       Serial.println("Bola movimentada");
     }
     if (input.startsWith("i")) {
-      iniX = input.substring(3, 4).toInt();
-      iniY = input.substring(7, 8).toInt();
+      iniX = input.substring(2, 3).toInt();
+      iniY = input.substring(4, 5).toInt();
       Serial.println("Casa inicial registrada");
     }
     if (input.startsWith("f")) {
-      fimX = input.substring(3, 4).toInt();
-      fimY = input.substring(7, 8).toInt();
+      fimX = input.substring(2, 3).toInt();
+      fimY = input.substring(4, 5).toInt();
       Serial.println("Casa final registrada");
     }
     if (input.startsWith("c")) {
       int a = 0;
       for (int i = 0; i < sizeof(cX) / sizeof(cX[0]); i++) {
-        cX[i] = input.substring(3 + a, 4 + a).toInt();
-        cY[i] = input.substring(7 + a, 8 + a).toInt();
-        a = a + 10;
+        cX[i] = input.substring(2 + a, 3 + a).toInt();
+        cY[i] = input.substring(4 + a, 5 + a).toInt();
+        a = a + 6;
       }
       Serial.println("Casas checkpoint registradas");
     }
     if (input.startsWith("p")) {
       int a = 0;
       for (int i = 0; i < sizeof(pX) / sizeof(pX[0]); i++) {
-        pX[i] = input.substring(3 + a, 4 + a).toInt();
-        pY[i] = input.substring(7 + a, 8 + a).toInt();
-        a = a + 10;
+        pX[i] = input.substring(2 + a, 3 + a).toInt();
+        pY[i] = input.substring(4 + a, 5 + a).toInt();
+        a = a + 6;
       }
       Serial.println("Casas parede registradas");
+    }
+
+    if (input.startsWith("e")) {
+      estacheck = input.substring(2, 3).toInt();
+      Serial1.write(estacheck);
+      Serial.println("Estado check recebido e enviado");
     }
   }
 
@@ -360,6 +370,9 @@ void Labirinto() {  // Desenha o labirinto
     } else {
       DrawTile("checkpoint", cX[i], cY[i]);
     }
+  }
+  for (int i = 0; i < sizeof(pXestatico) / sizeof(pXestatico[0]); i++) { // paredes estaticas
+    DrawTile("parede", pXestatico[i], pYestatico[i]);
   }
   DrawTile("final", fimX, fimY);
   DrawTile("inicial", iniX, iniY);
